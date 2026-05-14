@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Android build
+android/.gradle/
+android/build/
+android/app/build/
+android/capacitor-cordova-android-plugins/build/
+android/capacitor-cordova-android-plugins/.gradle/
+android/local.properties
+android/.idea/
+*.iml
+
+# Built APKs
+*.apk
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude
+.claude/
+
+# Old icon
+屎记.png
+
+# Backup files
+*.bak
+*.bak2

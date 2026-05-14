@@ -1,0 +1,11 @@
+{
+  "name": "排排",
+  "short_name": "排排",
+  "description": "记录每天拉屎状态",
+  "start_url": "index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1a1a2e",
+  "theme_color": "#1a1a2e",
+  "icons": []
+}

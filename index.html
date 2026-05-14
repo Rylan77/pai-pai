@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#FFF8F0">
+<title>排排</title>
+<style>
+:root{--bg:#FBF9F4;--card:#FEFDF9;--text:#4A3728;--t2:#8B8680;--orange:#FEBA40;--gold:#FFD070;--brown:#A0522D;--accent:#F39C12;--red:#E85D5D;--blue:#BBD29F;--purple:#B8A0D0;--dq-bg:#FFF7E2;--cell-rec-bg:#FFF5E0;--tab-bg:#EDE5DC;--tint:#FFF0E5;--radius:24px;--radius-sm:16px;--card-shadow:0 8px 24px rgba(74,55,40,.08);--btn-shadow:0 6px 20px rgba(254,186,64,.2);--safe-bot:env(safe-area-inset-bottom,16px);--font:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:var(--font);color:var(--text);-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+body{display:flex;flex-direction:column;max-width:480px;margin:0 auto;position:relative}
+.appbar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--card);border-bottom:1px solid rgba(0,0,0,.04);box-shadow:0 2px 8px rgba(0,0,0,.03)}
+.appbar h1{font-size:22px;font-weight:900}
+.streak-badge{display:flex;align-items:center;gap:4px;padding:8px 14px;border-radius:24px;font-weight:900;font-size:15px;transition:all .3s}
+.streak-badge.lit{background:var(--tint);color:var(--orange);box-shadow:0 2px 8px rgba(255,154,61,.18)}
+.streak-badge.cold{background:var(--tab-bg);color:var(--t2)}
+.pages{flex:1;overflow:hidden;position:relative}
+.page{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;display:none;padding-bottom:16px;animation:fi .2s ease-out}
+.page.active{display:flex;flex-direction:column}
+.bottom-nav{display:flex;background:var(--card);box-shadow:0 -2px 8px rgba(0,0,0,.05);padding-bottom:var(--safe-bot);position:relative}
+.bottom-nav button{flex:1;padding:10px 0 6px;border:none;background:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10px;font-weight:700;color:var(--t2);transition:all .2s cubic-bezier(.34,1.56,.64,1);position:relative}
+.bottom-nav button.active{color:var(--orange);transform:scale(1.06)}
+.bottom-nav button .ni{display:flex;align-items:center;justify-content:center;width:24px;height:24px;transition:all .2s}
+.bottom-nav button .ni svg{width:24px;height:24px;display:block}
+.bottom-nav button .dot{width:5px;height:5px;border-radius:50%;background:var(--orange);margin-top:1px;opacity:0;transition:opacity .2s}
+.bottom-nav button.active .dot{opacity:1}
+.month-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:8px 16px 6px}
+.stat-card{background:var(--card);border-radius:var(--radius-sm);padding:12px 8px;text-align:center;box-shadow:var(--card-shadow)}
+.stat-card .val{font-size:26px;font-weight:900;color:var(--orange)}
+.stat-card .val.orange{color:var(--orange)}
+.stat-card .lbl{font-size:11px;color:var(--t2);margin-top:2px}
+.month-nav-cal{display:flex;align-items:center;justify-content:space-between;padding:4px 16px 8px}
+.month-nav-cal span{font-size:17px;font-weight:800}
+.month-nav-cal button{width:38px;height:38px;border-radius:50%;border:2px solid var(--tab-bg);background:var(--card);font-size:16px;cursor:pointer;box-shadow:var(--card-shadow);transition:transform .12s}
+.month-nav-cal button:active{transform:scale(.92)}
+.cal-card{background:var(--card);border-radius:20px;margin:0 16px;padding:8px 4px 0;box-shadow:var(--card-shadow);overflow:hidden;position:relative;flex-shrink:0}
+.rec-today-btn{display:block;width:calc(100% - 24px);margin:8px 12px 12px;padding:12px;border:none;border-radius:var(--radius-sm);background:var(--orange);color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:var(--font);transition:transform .12s}
+.rec-today-btn:active{transform:scale(.97)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;padding:0 12px}
+.cal-grid .dhead{font-size:11px;font-weight:700;color:var(--orange);text-align:center;padding:4px 0}
+.cal-grid .dhead.we{color:var(--red)}
+.cal-grid .cell{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:0;cursor:pointer;transition:all .2s cubic-bezier(.34,1.56,.64,1);position:relative;border:2px solid transparent;background:transparent}
+.cal-grid .cell:active{transform:scale(.88)}
+.cal-grid .cell.today{background:var(--orange);border-radius:var(--radius-sm);border:2px solid var(--orange)}
+.cal-grid .cell.other{opacity:.25}
+.cal-grid .cell.has-rec{border:2px solid var(--orange);border-radius:var(--radius-sm);background:var(--cell-rec-bg)}
+.cal-grid .cell.today.has-rec{background:var(--orange)}
+.cal-grid .cell .dnum{font-size:14px;font-weight:700;color:var(--text)}
+.cal-grid .cell.today .dnum{color:#f0ece6}
+.cal-grid .cell .dicon{font-size:16px;line-height:1}
+.recent-list{padding:0 16px;display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.recent-header{display:flex;justify-content:space-between;align-items:center;padding:0 4px;margin-bottom:2px}
+.recent-header h3{font-size:15px;font-weight:800}
+.recent-header .all-link{font-size:12px;color:var(--t2);cursor:pointer;background:none;border:none;font-family:var(--font);font-weight:600}
+.recent-item{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--card);border-radius:var(--radius-sm);cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.03)}
+.flow-progress{padding:0 16px 8px;display:flex;gap:6px;align-items:center}
+.flow-bar{flex:1;height:10px;background:var(--tab-bg);border-radius:5px;overflow:hidden}
+.flow-bar-inner{height:100%;background:var(--orange);border-radius:5px;transition:width .3s}
+.flow-count{font-size:13px;font-weight:700;color:var(--t2);white-space:nowrap}
+.flow-title{font-size:24px;font-weight:900;padding:4px 16px 2px}
+.flow-sub{font-size:13px;color:var(--t2);padding:0 16px 16px}
+.flow-options{flex:1;overflow-y:auto;padding:0 16px 16px;display:flex;flex-direction:column;gap:8px}
+.opt-card{display:flex;align-items:center;gap:14px;padding:18px;background:var(--card);border-radius:var(--radius);border:2.5px solid transparent;cursor:pointer;transition:all .2s cubic-bezier(.34,1.56,.64,1);box-shadow:var(--btn-shadow)}
+.opt-card:active{transform:scale(.96);box-shadow:0 2px 6px rgba(0,0,0,.06)}
+.opt-card.picked{border-color:var(--orange);background:var(--cell-rec-bg);box-shadow:0 6px 18px rgba(255,154,61,.18);transform:scale(1.02)}
+.opt-card .o-emoji{font-size:36px;flex-shrink:0;width:48px;text-align:center}
+.opt-card .o-text{flex:1}
+.opt-card .o-label{font-size:17px;font-weight:700}
+.opt-card .o-sub{font-size:12px;color:var(--t2)}
+.opt-card .o-check{color:var(--orange);font-size:24px;display:none}
+.opt-card.picked .o-check{display:block}
+.confetti-container{position:fixed;inset:0;pointer-events:none;z-index:999}
+.confetti-piece{position:absolute;width:10px;height:10px;border-radius:3px;animation:cf 2s ease-out forwards}
+@keyframes cf{0%{transform:translateY(-100px) rotate(0deg);opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}
+.streak-hero{display:flex;flex-direction:column;align-items:center;padding:20px 0 8px}
+.streak-hero .sh-icon{font-size:40px}
+.streak-hero .sh-num{font-size:52px;font-weight:900;color:var(--orange);margin-top:2px}
+.streak-hero .sh-msg{font-size:14px;font-weight:700;color:var(--t2);margin-top:2px}
+.ach-stats-bar{display:flex;justify-content:space-between;align-items:center;padding:4px 20px 0;font-size:13px;font-weight:700;color:var(--t2)}
+.ach-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:0 16px}
+.ach-card{background:var(--card);border-radius:var(--radius);padding:14px 10px;display:flex;flex-direction:column;align-items:center;gap:4px;box-shadow:0 1px 3px rgba(0,0,0,.03);transition:all .25s cubic-bezier(.34,1.56,.64,1)}
+.ach-card.unlocked{box-shadow:0 3px 10px rgba(88,204,2,.06)}
+.ach-card.locked{opacity:.38;filter:grayscale(1)}
+.ach-card .ac-icon{font-size:32px;line-height:1}
+.ach-card .ac-title{font-size:13px;font-weight:800;color:var(--text)}
+.ach-card .ac-desc{font-size:10px;color:var(--t2);text-align:center;line-height:1.3}
+.bar-pct{font-size:9px;color:var(--t2);font-weight:600;margin-top:1px}
+.trend-days{display:flex;gap:6px;justify-content:space-between}
+.td-item{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;min-width:0}
+.td-dot-wrap{display:flex;flex-wrap:wrap;justify-content:center;gap:2px;min-height:30px;align-items:center}
+.td-dot{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;line-height:1;flex-shrink:0}
+.td-empty-dot{width:24px;height:24px;border-radius:50%;border:2px dashed var(--tab-bg);flex-shrink:0}
+.td-label{font-size:11px;color:var(--t2);font-weight:600}
+.td-day{font-size:13px;font-weight:700;color:var(--text)}
+.mood-ring{width:130px;height:130px;border-radius:50%;flex-shrink:0}
+.mood-inner{width:64px;height:64px;border-radius:50%;background:var(--bg);position:relative;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center}
+.chart-card{background:var(--card);border-radius:var(--radius);padding:18px;margin:8px 16px;box-shadow:var(--card-shadow)}
+.chart-card h3{font-size:15px;font-weight:800;margin-bottom:14px;color:var(--text)}
+.bar-row{display:flex;align-items:flex-end;gap:6px;height:100px;padding-top:16px}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.bar-fill{border-radius:6px 6px 0 0;width:100%;min-height:2px;transition:height .4s}
+.bar-label{font-size:10px;color:var(--t2);font-weight:600}
+.set-section{padding:12px 16px;display:flex;flex-direction:column;gap:10px}
+.set-card{display:flex;align-items:center;gap:14px;padding:18px;background:var(--card);border-radius:var(--radius);border:none;width:100%;cursor:pointer;text-align:left;font:inherit;box-shadow:0 1px 3px rgba(0,0,0,.03);transition:transform .12s}
+.set-card:active{transform:scale(.98)}
+.set-card .sc-icon{font-size:28px;flex-shrink:0;color:var(--orange);width:28px;height:28px;display:flex;align-items:center;justify-content:center}
+.set-card .sc-text{flex:1}
+.set-card .sc-title{font-size:16px;font-weight:700}
+.set-card .sc-sub{font-size:11px;color:var(--t2)}
+.avatar-card{display:flex;align-items:center;gap:14px;padding:20px;background:var(--card);border-radius:var(--radius);box-shadow:0 1px 3px rgba(0,0,0,.03)}
+.avatar-ring{width:64px;height:64px;border-radius:50%;background:var(--tint);display:flex;align-items:center;justify-content:center;font-size:40px;flex-shrink:0}
+.avatar-edit-icon{width:18px;height:18px;color:var(--t2);flex-shrink:0;cursor:pointer;transition:color .15s}
+.avatar-edit-icon:active{color:var(--orange)}
+.danger-btn{width:100%;padding:16px;border-radius:var(--radius);border:2px solid var(--red);background:transparent;color:var(--red);font-size:15px;font-weight:700;cursor:pointer;transition:transform .12s}
+.danger-btn:active{transform:scale(.97)}
+.d-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:center;justify-content:center;animation:fi .2s}
+@keyframes fi{from{opacity:0}to{opacity:1}}
+.dialog{background:var(--card);border-radius:var(--radius);padding:24px;width:calc(100% - 48px);max-width:360px;text-align:center}
+.dialog h2{font-weight:900;font-size:18px;margin-bottom:8px}
+.dialog p{font-size:13px;color:var(--t2);margin-bottom:18px}
+.dialog .d-btns{display:flex;gap:8px}
+.dialog .d-btns button{flex:1;padding:14px;border-radius:var(--radius-sm);border:none;font-size:14px;font-weight:700;cursor:pointer}
+.toast{position:fixed;bottom:120px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:10px 22px;border-radius:99px;font-size:13px;font-weight:600;z-index:250;animation:ti .25s;pointer-events:none;white-space:nowrap}
+@keyframes ti{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+/* Day record sheet (existing) */
+.sh-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:110;display:flex;align-items:flex-end;animation:fi .2s}
+.sh-overlay.closing{animation:fo .2s forwards}
+@keyframes fo{from{opacity:1}to{opacity:0}}
+.sh-sheet{background:var(--card);border-radius:24px 24px 0 0;width:100%;max-width:480px;margin:0 auto;padding:24px 20px 32px;max-height:70vh;overflow-y:auto;animation:shIn .25s cubic-bezier(.22,.61,.36,1)}
+.sh-overlay.closing .sh-sheet{animation:shOut .2s ease-in forwards}
+@keyframes shIn{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes shOut{from{transform:translateY(0)}to{transform:translateY(100%)}}
+.sh-sheet h3{font-weight:900;font-size:18px;margin-bottom:12px}
+.sh-entry{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid rgba(0,0,0,.04)}
+.sh-add-btn{width:100%;padding:14px;background:var(--orange);color:#fff;border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:700;cursor:pointer;margin-top:12px}
+/* Celebration overlay */
+.cel-overlay{position:fixed;inset:0;background:var(--card);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;animation:fi .25s}
+.cel-overlay.closing{animation:fo .3s forwards}
+.cel-poop{font-size:96px;animation:celBounce .6s cubic-bezier(.34,1.56,.64,1)}
+@keyframes celBounce{0%{transform:scale(0) rotate(-20deg)}60%{transform:scale(1.2) rotate(5deg)}100%{transform:scale(1) rotate(0)}}
+.cel-check{font-size:32px;font-weight:900;margin-top:16px;animation:celFadeUp .4s .2s both}
+.cel-sub{font-size:15px;color:var(--t2);margin-top:6px;animation:celFadeUp .4s .5s both}
+.cel-streak{font-size:20px;font-weight:900;color:var(--orange);margin-top:12px;animation:celFadeUp .4s .7s both}
+.cel-comment{font-size:15px;font-weight:600;color:var(--text);margin-top:14px;max-width:280px;text-align:center;line-height:1.5;animation:celFadeUp .4s 1s both}
+@keyframes celFadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.daily-quote{margin:4px 16px 8px;padding:8px 12px;background:var(--dq-bg);border-radius:var(--radius-sm);box-shadow:0 2px 8px rgba(0,0,0,.06);animation:dqBounce .4s cubic-bezier(.34,1.56,.64,1)}
+@keyframes dqBounce{0%{opacity:0;transform:translateY(-12px) scale(.9)}100%{opacity:1;transform:translateY(0) scale(1)}}
+.daily-quote .dq-head{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.daily-quote .dq-bulb{font-size:18px;color:var(--orange)}
+.daily-quote .dq-tag{font-size:11px;font-weight:800;color:var(--orange)}
+.daily-quote .dq-text{font-size:13px;color:var(--text);line-height:1.5;font-weight:600}
+.daily-quote .dq-foot{display:flex;justify-content:flex-end;margin-top:4px}
+.daily-quote .dq-refresh{font-size:11px;color:var(--t2);cursor:pointer;background:none;border:none;font-family:var(--font)}
+.stats-tabs{display:flex;gap:4px;margin:0 16px 8px;padding:3px;background:var(--tab-bg);border-radius:12px}
+.stats-tab{flex:1;padding:8px;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;background:transparent;color:var(--t2);transition:all .2s cubic-bezier(.34,1.56,.64,1);font-family:var(--font)}
+.stats-tab .ti{display:flex;align-items:center;width:18px;height:18px}
+.stats-tab .ti svg{width:18px;height:18px;display:block}
+.stats-tab.active{background:var(--card);color:var(--orange);box-shadow:0 2px 6px rgba(0,0,0,.08)}
+.stats-sub{display:none;flex-direction:column}
+.stats-sub.active{display:flex}
+.ana-placeholder{text-align:center;padding:40px 20px;color:var(--t2)}
+.ana-placeholder .ap-icon{font-size:48px;margin-bottom:12px}
+.ana-placeholder .ap-msg{font-size:14px;font-weight:600;line-height:1.5}
+.ana-score-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 16px 4px}
+.ana-score-card{background:var(--card);border-radius:var(--radius-sm);padding:14px 10px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.03)}
+.ana-score-card .as-val{font-size:24px;font-weight:900}
+.ana-score-card .as-lbl{font-size:11px;color:var(--t2);margin-top:2px}
+.ana-tip{background:linear-gradient(135deg,var(--tint),var(--cell-rec-bg));border-radius:var(--radius-sm);padding:14px 16px;margin:8px 16px 4px;font-size:13px;color:var(--text);line-height:1.6;font-weight:600}
+.ach-popup{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;display:flex;align-items:center;justify-content:center;animation:fi .2s}
+.ach-popup.closing{animation:fo .2s forwards}
+.ach-popup-card{background:var(--card);border-radius:var(--radius);padding:28px 24px 20px;width:calc(100% - 48px);max-width:340px;display:flex;flex-direction:column;align-items:center;text-align:center;animation:shIn .25s cubic-bezier(.22,.61,.36,1)}
+.ach-popup .ap-icon{font-size:64px;margin-bottom:8px}
+.ach-popup .ap-title{font-size:22px;font-weight:900;margin-bottom:4px}
+.ach-popup .ap-desc{font-size:13px;color:var(--t2);margin-bottom:12px;line-height:1.4}
+.ach-popup .ap-bar-wrap{width:100%;margin:8px 0 6px}
+.ach-popup .ap-bar{height:8px;background:var(--tab-bg);border-radius:4px;overflow:hidden}
+.ach-popup .ap-bar-inner{height:100%;border-radius:4px;transition:width .3s}
+.ach-popup .ap-prog-text{font-size:12px;color:var(--t2);margin-top:4px;font-weight:600}
+.ach-popup .ap-status{font-size:14px;font-weight:700;margin-top:8px}
+.ach-popup .ap-btn{width:100%;padding:14px;border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:700;cursor:pointer;margin-top:12px;font-family:var(--font)}
+.theme-row{display:flex;gap:12px;padding:16px 18px;align-items:center;background:var(--card);border-radius:var(--radius);box-shadow:0 1px 3px rgba(0,0,0,.03)}
+.theme-row span{font-size:14px;font-weight:700;color:var(--text);flex-shrink:0}
+.theme-dot{width:32px;height:32px;border-radius:50%;border:3px solid transparent;cursor:pointer;transition:all .2s cubic-bezier(.34,1.56,.64,1)}
+.theme-dot.active{border-color:var(--orange);transform:scale(1.12)}
+.ach-badges{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.ach-badges .badge-dot{font-size:18px;display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--tint);line-height:1}
+.emoji-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;padding:4px 0}
+.emoji-grid button{width:100%;aspect-ratio:1;font-size:32px;border:none;border-radius:var(--radius-sm);background:var(--card);cursor:pointer;transition:all .15s;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.emoji-grid button:active{transform:scale(.9);background:var(--cell-rec-bg)}
+.emoji-grid button.selected{box-shadow:0 0 0 3px var(--orange);background:var(--cell-rec-bg)}
+
+/* Flow bottom sheet */
+.flow-bd{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;display:flex;align-items:flex-end;animation:fi .2s}
+.flow-bd.closing{animation:fo .2s forwards}
+.flow-bd.closing .flow-sh{animation:flOut .25s ease-in forwards}
+.flow-sh{width:100%;max-width:480px;height:88vh;background:var(--bg);border-radius:24px 24px 0 0;display:flex;flex-direction:column;overflow:hidden;animation:flIn .35s cubic-bezier(.22,.61,.36,1)}
+@keyframes flIn{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes flOut{from{transform:translateY(0)}to{transform:translateY(100%)}}
+.flow-sh-hd{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;flex-shrink:0}
+.flow-sh-hd button{background:none;border:none;font-size:15px;cursor:pointer;padding:8px;font-weight:600}
+.flow-sh-bd{flex:1;display:flex;flex-direction:column;overflow-y:auto;transition:opacity .18s,transform .18s}
+/* Two-column Bristol+Color */
+.bc-row{display:flex;gap:10px;padding:0 4px}
+.bc-l{flex:1.15;display:flex;flex-direction:column;gap:7px}
+.bc-r{flex:1;display:flex;flex-direction:column;gap:7px;margin-top:56px}
+.bc-l .bc-card,.bc-r .bc-card{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--card);border-radius:var(--radius);border:2.5px solid transparent;cursor:pointer;transition:all .2s cubic-bezier(.34,1.56,.64,1);box-shadow:var(--card-shadow)}
+.bc-l .bc-card:active,.bc-r .bc-card:active{transform:scale(.96);box-shadow:0 2px 6px rgba(0,0,0,.06)}
+.bc-l .bc-card.picked,.bc-r .bc-card.picked{border-color:var(--orange);background:var(--cell-rec-bg);box-shadow:0 6px 18px rgba(255,154,61,.18);transform:scale(1.02)}
+.bc-card .bc-e{font-size:28px;flex-shrink:0;width:36px;text-align:center;line-height:1}
+.bc-card .bc-c-dot{width:28px;height:28px;border-radius:50%;flex-shrink:0}
+.bc-card .bc-n{font-size:14px;font-weight:700}
+.splash{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+.splash.fade{animation:fo .35s forwards}
+.splash-poop{font-size:88px;animation:celBounce .6s cubic-bezier(.34,1.56,.64,1)}
+.splash-sub{font-size:15px;color:var(--t2);font-weight:600;animation:celFadeUp .4s .4s both}
+</style>
+</head>
+<body>
+
+<div id="splash" class="splash"><span class="splash-poop">💩</span><span class="splash-sub">💩 记录每一天</span></div>
+<div class="appbar"><h1>💩 排排</h1><span class="streak-badge cold" id="streakBadge">❄️ 0</span></div>
+
+<div class="pages" id="pages">
+  <div class="page active" id="pageCal">
+    <div class="month-stats" id="monthStats"></div>
+    <div id="dailyQuote"></div>
+    <div class="cal-card" id="calCard">
+      <div class="month-nav-cal"><button id="btnPrevM">◀</button><span id="monthLabel"></span><button id="btnNextM">▶</button></div>
+      <div class="cal-grid" id="calGrid"></div>
+      <button class="rec-today-btn" id="recTodayBtn">＋ 记录今天</button>
+    </div>
+    <div class="recent-list" id="recentList" style="margin-top:10px"></div>
+  </div>
+  <div class="page" id="pageStats" style="overflow-y:auto">
+    <div class="streak-hero" id="streakHero">
+      <span class="sh-icon">🔥</span>
+      <span class="sh-num" id="streakNum">0</span>
+      <span class="sh-msg" id="streakMsg">今天还没记录哦</span>
+    </div>
+    <div class="stats-tabs"><button class="stats-tab active" id="tabStats"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>数据</button><button class="stats-tab" id="tabAnalysis"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>分析</button></div>
+    <div class="stats-sub active" id="subStats"><div id="statsCharts"></div></div>
+    <div class="stats-sub" id="subAnalysis"><div id="analysisContent"></div></div>
+  </div>
+  <div class="page" id="pageAch" style="overflow-y:auto">
+    <div class="ach-stats-bar" id="achStatsBar"></div>
+    <div class="ach-grid" id="achGrid" style="margin-top:8px"></div>
+  </div>
+  <div class="page" id="pageSet">
+    <div class="set-section">
+      <div class="avatar-card"><div class="avatar-ring" id="avatarRing" onclick="pickAvatar()" style="cursor:pointer">💩</div><div style="flex:1;min-width:0"><div style="font-weight:900;font-size:18px;cursor:pointer" id="userName" onclick="editName()">排排用户</div><div class="ach-badges" id="achBadges"></div></div><svg class="avatar-edit-icon" onclick="editName()" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
+      <div class="theme-row"><span>主题色</span><span class="theme-dot active" data-theme="warm" style="background:#FEBA40" id="tdWarm"></span><span class="theme-dot" data-theme="green" style="background:#58CC02" id="tdGreen"></span><span class="theme-dot" data-theme="purple" style="background:#A855F7" id="tdPurple"></span><span class="theme-dot" data-theme="dark" style="background:#1E1E24" id="tdDark"></span></div>
+      <button class="set-card" id="btnExport"><span class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span><div class="sc-text"><div class="sc-title">导出数据</div><div class="sc-sub">保存为JSON文件</div></div></button>
+      <button class="set-card" id="btnImport"><span class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></span><div class="sc-text"><div class="sc-title">导入数据</div><div class="sc-sub">从JSON文件恢复</div></div></button>
+      <button class="set-card" id="btnAbout"><span class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span><div class="sc-text"><div class="sc-title">关于排排</div><div class="sc-sub">使用说明与免责声明</div></div></button>
+<div style="margin-top:24px"><button class="danger-btn" id="btnClear">清除所有数据</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="bottom-nav" id="bottomNav">
+  <button class="active" data-page="pageCal"><span class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>日历<span class="dot"></span></button>
+  <button data-page="pageStats"><span class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>统计<span class="dot"></span></button>
+  <button data-page="pageAch"><span class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2"/><path d="M18 9h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2"/><rect x="6" y="3" width="12" height="6" rx="1"/><line x1="12" y1="15" x2="12" y2="21"/><line x1="8" y1="21" x2="16" y2="21"/></svg></span>成就<span class="dot"></span></button>
+  <button data-page="pageSet"><span class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>设置<span class="dot"></span></button>
+</div>
+
+<!-- Celebration overlay -->
+<div id="celOverlay" class="cel-overlay" style="display:none">
+  <span class="cel-poop">💩</span>
+  <span class="cel-check">今日已拉 ✓</span>
+  <span class="cel-sub" id="celDate"></span>
+  <span class="cel-streak" id="celStreak"></span>
+  <span class="cel-comment" id="celComment"></span>
+</div>
+
+<!-- Flow bottom sheet -->
+<div id="flowBd" class="flow-bd" style="display:none">
+  <div class="flow-sh">
+    <div class="flow-sh-hd">
+      <button id="flowBackBtn" onclick="goBack()" style="visibility:hidden;color:var(--text)">← 上一步</button>
+      <button onclick="closeFlow()" style="color:var(--t2)">✕ 关闭</button>
+    </div>
+    <div class="flow-sh-bd" id="flowBody"></div>
+  </div>
+</div>
+
+<div class="confetti-container" id="confettiEl"></div>
+
+<div id="achPopup" class="ach-popup" style="display:none"><div class="ach-popup-card" id="achPopupCard"></div></div>
+
+<script>
+const TS=['晨起','早餐后','午餐后','晚餐后','睡前','凌晨'];
+const TI=['🌅','🥐','🍱','🍲','🌙','🕐'];
+const BN=['羊粪球','麻花','香蕉','蛇形','软泥','蓬松','水样'];
+const BE=['🪨','🥨','🍌','🐍','💩','☁️','💧'];
+const BC=['#878386','#B3744F','#D09062','#F5B756','#D9DA71','#BBD29F','#88AE99'];
+const CO=['棕','黑','绿','黄','红','灰'];
+const CH=['#A47C48','#3D2E1E','#6B8E23','#D4A84C','#CC4444','#999999'];
+const DU=['1min','3min','5min','10min','legNumb'];
+const DL=['闪电侠','正常发挥','标准流程','深度思考','哲学时刻'];
+const DT=['1分钟','3分钟','5分钟','10分钟','腿麻'];
+const SM=['verySmooth','smooth','normal','hard','impossible'];
+const SL=['一泻千里','比较顺畅','略费力气','千呼万唤','颗粒无收'];
+const SE=['😎','😊','🤔','😰','😭'];
+const MO=['great','relieved','neutral','thoughtful','regret','exhausted'];
+const ML=['畅快','解脱','平常','沉思','悔恨','虚脱'];
+const ME=['🦅','🧘','😐','🤔','😔','🫠'];
+const TODAY=new Date();
+const DAILY_QUOTES=[
+  {emoji:'⏰',text:'一个人平均一生要花3年时间在厕所里'},
+  {emoji:'🏛️',text:'世界上最古老的厕所在古印度，已有4000年历史'},
+  {emoji:'🏟️',text:'古罗马公共厕所没有隔间，大家并排坐着聊天'},
+  {emoji:'🐨',text:'考拉的便便是方形的，因为它们的肠道结构特殊'},
+  {emoji:'🍌',text:'健康的大便应该像一根香蕉——布里斯托第三型'},
+  {emoji:'📏',text:'人的肠道长度大约是身高的4到5倍'},
+  {emoji:'🚀',text:'国际空间站上的马桶价值2300万美元'},
+  {emoji:'🇯🇵',text:'日本有"厕所之神"，每年的11月10日是厕所日'},
+  {emoji:'🐘',text:'一头大象每天能拉出约50公斤的便便'},
+  {emoji:'🦴',text:'世界上最大的便便化石长40厘米，属于维京时代'},
+  {emoji:'💧',text:'便便的75%是水，剩下的部分是细菌、纤维和死细胞'},
+  {emoji:'🦛',text:'河马会用尾巴旋转喷便来标记自己的领地'},
+  {emoji:'🏺',text:'冲水马桶最早出现在公元前2500年的古印度'},
+  {emoji:'🧬',text:'排便时迷走神经受刺激，这就是为什么拉完会感觉特别爽'},
+  {emoji:'🟫',text:'袋熊的便便是立方体形状的，科学家至今还在研究原因'},
+  {emoji:'👨‍🚀',text:'NASA在1998年就研究出了如何在太空中处理大便'},
+  {emoji:'👑',text:'法国国王路易十四曾坐在马桶上接见大臣'},
+  {emoji:'🐧',text:'企鹅可以精准控制便便的射程，最远可达40厘米'},
+  {emoji:'☕',text:'世界上最贵的猫屎咖啡，其实是麝香猫的便便加工而成'},
+  {emoji:'❄️',text:'企鹅一天排便多次，它们的白色便便是由特殊消化物构成'},
+  {emoji:'🧻',text:'19世纪美国人把百货商品目录当厕纸，一页一页撕着用'},
+  {emoji:'🔬',text:'便便中约30%的重量是肠道细菌，而不是食物残渣'},
+  {emoji:'🐰',text:'兔子会吃掉自己的便便进行二次消化，这叫食粪性'},
+  {emoji:'🦖',text:'恐龙便便的化石叫粪化石，科学家靠它研究恐龙吃了什么'},
+  {emoji:'🌍',text:'全球每年产生约6.4亿吨人类粪便'},
+  {emoji:'🍔',text:'食物从吃到拉平均72小时，今天拉的其实是三天前吃的'},
+  {emoji:'✈️',text:'飞机排出的蓝冰曾从天上掉下来，砸穿过民房屋顶'},
+  {emoji:'🐛',text:'屎壳郎能推动自身体重50倍的粪球，等于人推6吨重物'},
+  {emoji:'🧪',text:'便便的臭味来自粪臭素，稀释后它其实是香水的原料之一'},
+  {emoji:'🥇',text:'世界上最贵的便便是抹香鲸的龙涎香，用于高级香水'},
+];
+
+let calY=TODAY.getFullYear(),calM=TODAY.getMonth();
+let flowDate='',flowStep=0,flowData={},flowJustBacked=false;
+let easterEggClicks=0,easterEggTimer=null;
+
+const DB={_db:null,
+  async open(){return new Promise((r,j)=>{const q=indexedDB.open('shitDiary',1);q.onupgradeneeded=e=>{if(!e.target.result.objectStoreNames.contains('rec')){const s=e.target.result.createObjectStore('rec',{keyPath:'id'});s.createIndex('date','date')}};q.onsuccess=e=>{this._db=e.target.result;r()};q.onerror=j})},
+  async _e(){if(this._db)return;await this.open()},
+  async getAll(){await this._e();return new Promise((r,j)=>{const t=this._db.transaction('rec','readonly').objectStore('rec').getAll();t.onsuccess=()=>r(t.result.sort((a,b)=>b.ts-a.ts));t.onerror=j})},
+  async put(r){await this._e();return new Promise((x,y)=>{const t=this._db.transaction('rec','readwrite').objectStore('rec').put(r);t.onsuccess=x;t.onerror=y})},
+  async del(id){await this._e();return new Promise(x=>{this._db.transaction('rec','readwrite').objectStore('rec').delete(id).onsuccess=x})},
+  async clear(){await this._e();return new Promise(x=>{this._db.transaction('rec','readwrite').objectStore('rec').clear().onsuccess=x})}
+};
+
+const AUD={ctx:null,
+  ensure(){if(!this.ctx){this.ctx=new(window.AudioContext||window.webkitAudioContext)()}if(this.ctx.state==='suspended')this.ctx.resume();return this.ctx},
+  // Tap feedback
+  tap(){const c=this.ensure();const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=880;g.gain.setValueAtTime(.1,c.currentTime);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.06);o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+.06)},
+  // Celebration — arpeggio run + reveal chord
+  celebrate(){const c=this.ensure(),t=c.currentTime;const run=[392,440,523,587,659,784];run.forEach((f,i)=>{const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(.1,t+i*.05);g.gain.exponentialRampToValueAtTime(.001,t+i*.05+.18);o.connect(g);g.connect(c.destination);o.start(t+i*.05);o.stop(t+i*.05+.18)});const chord=[392,494,587,784];chord.forEach((f,i)=>{const o=c.createOscillator(),g=c.createGain();o.type='triangle';o.frequency.value=f;g.gain.setValueAtTime(.14,t+.35);g.gain.exponentialRampToValueAtTime(.001,t+.35+.8);o.connect(g);g.connect(c.destination);o.start(t+.35);o.stop(t+.35+.8)})},
+  // Achievement unlock — shatter + reveal
+  achieve(){const c=this.ensure(),t=c.currentTime;const b=c.createBuffer(1,c.sampleRate*.08,c.sampleRate);const d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.max(0,1-i/d.length*.9);const ns=c.createBufferSource(),ng=c.createGain();ns.buffer=b;ng.gain.setValueAtTime(.22,t);ng.gain.exponentialRampToValueAtTime(.001,t+.08);ns.connect(ng);ng.connect(c.destination);ns.start();const lo=c.createOscillator(),lg=c.createGain();lo.type='sine';lo.frequency.setValueAtTime(120,t);lo.frequency.exponentialRampToValueAtTime(40,t+.08);lg.gain.setValueAtTime(.25,t);lg.gain.exponentialRampToValueAtTime(.001,t+.1);lo.connect(lg);lg.connect(c.destination);lo.start();lo.stop(t+.1);const shards=[1200,1050,900,780,660,580];shards.forEach((f,i)=>{const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(.07,t+.1+i*.04);g.gain.exponentialRampToValueAtTime(.001,t+.1+i*.04+.15);o.connect(g);g.connect(c.destination);o.start(t+.1+i*.04);o.stop(t+.1+i*.04+.15)});const chord=[392,494,587,784];chord.forEach((f,i)=>{const o=c.createOscillator(),g=c.createGain();o.type='triangle';o.frequency.value=f;g.gain.setValueAtTime(.12,t+.38);g.gain.exponentialRampToValueAtTime(.001,t+.38+.6);o.connect(g);g.connect(c.destination);o.start(t+.38);o.stop(t+.38+.6)})},
+  // Opening boing
+  boing(){const c=this.ensure();const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.setValueAtTime(200,c.currentTime);o.frequency.exponentialRampToValueAtTime(600,c.currentTime+.12);g.gain.setValueAtTime(.18,c.currentTime);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.25);o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+.25)},
+};
+
+document.addEventListener('click',()=>AUD.ensure(),{once:true});
+
+document.querySelectorAll('.bottom-nav button[data-page]').forEach(b=>{b.onclick=()=>{const id=b.dataset.page;document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id===id));document.querySelectorAll('.bottom-nav button[data-page]').forEach(bb=>bb.classList.toggle('active',bb.dataset.page===id));if(id==='pageCal')renderCal();if(id==='pageStats')renderStats();if(id==='pageAch')renderAch();if(id==='pageSet')updUserCard()}});
+document.getElementById('recTodayBtn').onclick=()=>{const ds=`${TODAY.getFullYear()}-${String(TODAY.getMonth()+1).padStart(2,'0')}-${String(TODAY.getDate()).padStart(2,'0')}`;openFlow(ds)};
+function toast(t){const e=document.createElement('div');e.className='toast';e.textContent=t;document.body.appendChild(e);setTimeout(()=>e.remove(),1800)}
+
+async function getStreak(){const a=await DB.getAll();const ds=new Set(a.map(r=>r.date));let s=0;const d=new Date();while(true){const k=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;if(ds.has(k))s++;else break;d.setDate(d.getDate()-1)}return s}
+function getMaxStreakEver(all){if(all.length===0)return 0;const dates=new Set(all.map(r=>r.date));const sorted=[...dates].sort();let max=0,cur=0;const prev=new Date();for(const ds of sorted){if(cur===0){cur=1;prev.setTime(new Date(ds).getTime());continue}const curD=new Date(ds);const diffDays=Math.round((curD-prev)/86400000);if(diffDays===1){cur++;max=Math.max(max,cur)}else{max=Math.max(max,cur);cur=1}prev.setTime(curD.getTime())}max=Math.max(max,cur);const saved=Math.max(max,JSON.parse(localStorage.getItem('shitDiary_maxStreak')||'0'));localStorage.setItem('shitDiary_maxStreak',JSON.stringify(saved));return saved}
+async function updStreak(){const s=await getStreak();const b=document.getElementById('streakBadge');b.textContent=(s>0?'🔥 ':'❄️ ')+s;b.className='streak-badge '+(s>0?'lit':'cold')}
+async function getAch(){const s=await getStreak();const a=await DB.getAll();const mx=getMaxStreakEver(a);return computeAchievements(a,s,mx)}
+
+function computeAchievements(all,streak,maxStreak){
+  const t=all.length,bt=[],du={},sm={},mo={},tsl={};
+  for(let i=1;i<=7;i++)bt[i]=0;const cs=new Set();
+  all.forEach(r=>{bt[r.bt]=(bt[r.bt]||0)+1;cs.add(r.c);du[r.dur]=(du[r.dur]||0)+1;sm[r.sm]=(sm[r.sm]||0)+1;mo[r.mood]=(mo[r.mood]||0)+1;tsl[r.tslot]=(tsl[r.tslot]||0)+1});
+  const a37=((bt[3]||0)+(bt[4]||0))/Math.max(t,1);
+  const hardN=(sm['hard']||0)+(sm['impossible']||0);const wknd=all.filter(r=>{const d=new Date(r.date);return d.getDay()===0||d.getDay()===6}).length;const dd={};all.forEach(r=>{dd[r.date]=(dd[r.date]||0)+1});const multi=Object.values(dd).some(v=>v>=2);
+  const nightN=(tsl['凌晨']||0)+(tsl['睡前']||0);
+  return [
+    {icon:'🔥',title:'连续3天',cond:'历史最高连续3天',desc:'三天打鱼两天晒网？不存在的',done:maxStreak>=3,prog:Math.max(streak,maxStreak),max:3},
+    {icon:'🔥🔥',title:'连续7天',cond:'历史最高连续7天',desc:'一周全勤，肠道劳模',done:maxStreak>=7,prog:Math.max(streak,maxStreak),max:7},
+    {icon:'👑',title:'连续30天',cond:'历史最高连续30天',desc:'一个月不间断，真正的卷王',done:maxStreak>=30,prog:Math.max(streak,maxStreak),max:30},
+    {icon:'🍌',title:'香蕉达人',cond:'香蕉便达到10次',desc:'香蕉便十连，教科书级别',done:(bt[3]||0)>=10,prog:bt[3]||0,max:10},
+    {icon:'💎',title:'完美主义者',cond:'布里斯托3+4型占比≥70%',desc:'七成完美，布里斯托代言人',done:t>=10&&a37>=.7,prog:Math.round(a37*100),max:70,unit:'%'},
+    {icon:'🗂️',title:'全品类收藏家',cond:'集齐全部7种布里斯托分类',desc:'集齐七种，召唤神龙',done:bt.slice(1).every(x=>x>0),prog:bt.slice(1).filter(x=>x>0).length,max:7},
+    {icon:'⚡',title:'闪电侠',cond:'1分钟解决达到10次',desc:'十次闪电战，快到模糊',done:(du['1min']||0)>=10,prog:du['1min']||0,max:10},
+    {icon:'🏃',title:'马拉松选手',cond:'腿麻时刻达到10次',desc:'十次腿麻，马桶上的长跑冠军',done:(du['legNumb']||0)>=10,prog:du['legNumb']||0,max:10},
+    {icon:'🧠',title:'哲学家',cond:'体验过1次腿麻',desc:'腿麻过，思考过，存在过',done:(du['legNumb']||0)>=1,prog:du['legNumb']||0,max:1},
+    {icon:'💨',title:'一泻千里',cond:'一泻千里达到10次',desc:'十次丝滑体验，德芙看了都服',done:(sm['verySmooth']||0)>=10,prog:sm['verySmooth']||0,max:10},
+    {icon:'💪',title:'顽强斗士',cond:'艰难奋战达到10次',desc:'十次硬仗，从不退缩',done:hardN>=10,prog:hardN,max:10},
+    {icon:'🦉',title:'夜猫子',cond:'深夜记录达到10次',desc:'深夜的厕所，是你的主场',done:nightN>=10,prog:nightN,max:10},
+    {icon:'🐦',title:'早起鸟',cond:'晨起记录达到5次',desc:'清晨第一站，打卡五次',done:(tsl['晨起']||0)>=5,prog:tsl['晨起']||0,max:5},
+    {icon:'🏆',title:'百拉成钢',cond:'累计记录100条',desc:'百次记录，钢铁是这样炼成的',done:t>=100,prog:t,max:100},
+    {icon:'🌈',title:'遇见彩虹，吃定彩虹',cond:'集齐全部6种颜色',desc:'六色齐全，便便界的调色盘',done:cs.size>=6,prog:cs.size,max:6},
+    {icon:'🎉',title:'一切的开始',cond:'完成第1次记录',desc:'这一天将被载入屎册',done:t>=1,prog:Math.min(t,1),max:1},
+    {icon:'💩',title:'梅开二度',cond:'同一天记录达到2次',desc:'一天之内两度光临，厕所VIP',done:multi,prog:multi?1:0,max:1},
+    {icon:'🎨',title:'拿起调色盘',cond:'记录过3种颜色',desc:'三种颜色，便便也是有审美的',done:cs.size>=3,prog:cs.size,max:3},
+    {icon:'🌤️',title:'晴天娃娃',cond:'畅快心情达到5次',desc:'五次畅快，心情天天晴',done:(mo['great']||0)>=5,prog:mo['great']||0,max:5},
+    {icon:'📅',title:'周末加班',cond:'周末记录达到5次',desc:'放假也不忘打卡，年度优秀员工',done:wknd>=5,prog:wknd,max:5},
+    {icon:'📝',title:'记录爱好者',cond:'累计记录30条',desc:'三十条记录，数据达人就是你',done:t>=30,prog:t,max:30},
+    {icon:'🌊',title:'开闸泄洪',cond:'记录过1次水样便',desc:'飞流直下三千尺，疑是银河落九天',done:(bt[7]||0)>=1,prog:bt[7]||0,max:1},
+    {icon:'☕',title:'咖啡时间',cond:'晨起时段记录过1次',desc:'咖啡还没喝，便意先来了',done:(tsl['晨起']||0)>=1,prog:tsl['晨起']||0,max:1},
+    {icon:'🎰',title:'人品检测',cond:'记录过1次完美香蕉便',desc:'今天的便便很给面子',done:((bt[3]||0)+(bt[4]||0))>=1,prog:(bt[3]||0)+(bt[4]||0),max:1},
+  ];
+}
+
+function getCommentary(bt,dur,sm,mood){
+  const c=[];
+  if(bt===3&&dur==='1min'&&sm==='verySmooth'&&mood==='great')return'教科书级别！这一拉足以载入屎册 📖';
+  if(bt===6&&dur==='1min')return'速度与激情之排排特别篇 🏎️';
+  if(bt===1&&sm==='hard'&&mood==='regret')return'每一颗都是岁月的沉淀，辛苦了 💎';
+  if(dur==='legNumb'&&mood==='thoughtful')return'在厕所里思考出了一套完整的世界观 🚽🧠';
+  if(dur==='legNumb'&&mood==='regret')return'腿麻了，但也想通了一些人生的道理 🦵💭';
+  if(dur==='legNumb')return'在厕所里思考人生的意义 🚽🧠';
+  if(bt===3&&dur==='1min')return'教科书级别！这一拉足以载入屎册 📖';
+  if(dur==='1min')return'闪电侠出手，快到模糊 ⚡💨';
+  if(sm==='verySmooth'&&bt===3)return'如丝般顺滑，仿佛德芙广告现场 🍫';
+  if(sm==='verySmooth'&&bt===4)return'标准出品，质量保证，不愧是专业选手 🐍✨';
+  if(sm==='verySmooth'&&bt===2)return'顺滑团结，一路高歌猛进 🥨💨';
+  if(sm==='verySmooth')return'一气呵成，行云流水，大师风范 💨';
+  if(sm==='impossible')return'这是一场意志力的较量，你没有输 🪨✊';
+  if(sm==='hard'&&bt===1)return'每一粒都是意志力的结晶 🪨💪';
+  if(sm==='hard')return'千呼万唤始出来，辛苦了 😰';
+  if(mood==='great')return'拉完一身轻，世界如此美好 🦅☀️';
+  if(mood==='regret')return'有些事情，经历过才懂得珍惜 💔';
+  if(mood==='exhausted')return'用尽全身力气，换来片刻安宁 🫠';
+  if(mood==='thoughtful')return'这一拉，拉出了哲学的高度 🤔📚';
+  if(mood==='relieved')return'如释重负的感觉，真好 🧘✨';
+  const btC={1:'颗粒归仓，每一颗都弥足珍贵 🪨',2:'团结就是力量，它们选择了结伴而行 🥨',3:'完美的形状，完美的一天 🍌✨',4:'柔软有型，恰到好处的平衡 🐍',5:'软而不散，形散而神不散 💩',6:'自由不羁的灵魂，不受世俗约束 ☁️',7:'开闸放水，泄洪成功 💧🌊'};
+  return btC[bt]||'每一次记录都是对生活的热爱 💩❤️';
+}
+
+function getDailyQuote(){
+  const seen=JSON.parse(localStorage.getItem('shitDiary_seenQuotes')||'[]');
+  const pool=DAILY_QUOTES.filter(q=>!seen.includes(q.text));
+  if(pool.length===0){localStorage.setItem('shitDiary_seenQuotes','[]');return getDailyQuote()}
+  const q=pool[Math.floor(Math.random()*pool.length)];
+  seen.push(q.text);localStorage.setItem('shitDiary_seenQuotes',JSON.stringify(seen));
+  return q;
+}
+
+function getTitle(ach){
+  const order=['📜','🏆','👑','🗂️','💎','🏃','🌈','😄','💨','💪','🦉','🐦','⚡','🍌','🔥🔥','🧠','🌅','🔥'];
+  for(const ic of order){const a=ach.find(x=>x.icon===ic);if(a&&a.done)return a.title}
+  return '暂无称号';
+}
+
+async function renderCal(){
+  calY=calY||TODAY.getFullYear();calM=calM??TODAY.getMonth();
+  const q=getDailyQuote();const qe=document.getElementById('dailyQuote');
+  qe.style.display='block';qe.className='daily-quote';
+  const renderQuote=()=>{const q2=getDailyQuote();qe.innerHTML=`<div class="dq-head"><span class="dq-bulb">💡</span><span class="dq-tag">你知道吗</span></div><div class="dq-text">${q2.emoji} ${q2.text}</div><div class="dq-foot"><button class="dq-refresh" id="dqRefresh">🎲 换一换</button></div>`;qe.querySelector('#dqRefresh').onclick=e=>{e.stopPropagation();renderQuote()}};
+  renderQuote();
+  document.getElementById('monthLabel').textContent=`${calY}年${calM+1}月`;
+  const all=await DB.getAll();
+  const rm={};all.forEach(r=>{const k=r.date;if(!rm[k])rm[k]=[];rm[k].push(r)});
+  const streak=await getStreak();
+  const ss=new Set();for(let i=0;i<streak;i++){const d=new Date();d.setDate(d.getDate()-i);ss.add(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`)}
+  const ms=`${calY}-${String(calM+1).padStart(2,'0')}-01`,me=`${calY}-${String(calM+2>12?1:calM+2).padStart(2,'0')}-01`;
+  const mr=all.filter(r=>r.date>=ms&&r.date<me),md=new Set(mr.map(r=>r.date)).size;
+  document.getElementById('monthStats').innerHTML=`<div class="stat-card"><div class="val">${md}</div><div class="lbl">本月记录</div></div><div class="stat-card"><div class="val orange">${streak}</div><div class="lbl">连续天数</div></div><div class="stat-card"><div class="val">${all.length}</div><div class="lbl">总记录</div></div>`;
+  const ts=`${TODAY.getFullYear()}-${String(TODAY.getMonth()+1).padStart(2,'0')}-${String(TODAY.getDate()).padStart(2,'0')}`;
+  const first=new Date(calY,calM,1).getDay(),off=(first+6)%7,dim=new Date(calY,calM+1,0).getDate(),pd=new Date(calY,calM,0).getDate();
+  let h='<div class="dhead">一</div><div class="dhead">二</div><div class="dhead">三</div><div class="dhead">四</div><div class="dhead">五</div><div class="dhead we">六</div><div class="dhead we">日</div>';
+  for(let i=off-1;i>=0;i--){const d=pd-i;const ym=calM===0?calY-1:calY,mm=calM===0?12:calM;h+=cellH(d,`${ym}-${String(mm).padStart(2,'0')}-${String(d).padStart(2,'0')}`,true,rm,ss)}
+  for(let d=1;d<=dim;d++)h+=cellH(d,`${calY}-${String(calM+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`,false,rm,ss,ts);
+  const rem=Math.ceil((off+dim)/7)*7-off-dim;
+  for(let d=1;d<=rem;d++){const ym=calM===11?calY+1:calY,mm=calM===11?1:calM+2;h+=cellH(d,`${ym}-${String(mm).padStart(2,'0')}-${String(d).padStart(2,'0')}`,true,rm,ss)}
+  document.getElementById('calGrid').innerHTML=h;
+  const recent=all.slice(0,3);
+  document.getElementById('recentList').innerHTML=(recent.length===0?`<div style="text-align:center;padding:24px"><span style="font-size:48px">💩</span><p style="color:var(--t2);margin-top:8px">还没有记录，点击日期开始</p></div>`:`<div class="recent-header"><h3>最近记录</h3><button class="all-link" onclick="showAllRecs()">全部记录 →</button></div>`+recent.map(r=>`<div class="recent-item" onclick="dayClick('${r.date}')"><span style="font-size:28px">${BE[r.bt-1]}</span><div style="flex:1"><div style="font-weight:700">${BN[r.bt-1]} · ${r.c||''}</div><div style="font-size:11px;color:var(--t2)">${r.date} · ${ML[MO.indexOf(r.mood)]||''} · ${DL[DU.indexOf(r.dur)]||''}</div></div><span style="font-size:28px">${ME[MO.indexOf(r.mood)]}</span></div>`).join(''));
+  updStreak();
+}
+function cellH(d,ds,other,rm,ss,ts){const has=rm[ds]&&rm[ds].length>0;return `<div class="cell${other?' other':''}${has?' has-rec':''}${ss.has(ds)?' streak':''}${ds===ts?' today':''}" onclick="${other?'':'dayClick(\''+ds+'\')'}" data-date="${ds}"><span class="dnum">${d}</span>${has?'<span class="dicon">💩</span>':''}</div>`}
+window.dayClick=async function(ds){const a=await DB.getAll();const rs=a.filter(r=>r.date===ds);if(rs.length>0)showDaySheet(ds,rs);else openFlow(ds)};
+function showDaySheet(ds,rs){
+  const ov=document.createElement('div');ov.className='sh-overlay';
+  ov.innerHTML=`<div class="sh-sheet"><h3>${ds}</h3>${rs.map(r=>`<div class="sh-entry"><span style="font-size:32px">${BE[r.bt-1]}</span><div style="flex:1"><div style="font-weight:700">${BN[r.bt-1]} · ${r.tslot}</div><div style="font-size:11px;color:var(--t2)">${DL[DU.indexOf(r.dur)]||''} · ${SE[SM.indexOf(r.sm)]} ${SL[SM.indexOf(r.sm)]||''} · ${ME[MO.indexOf(r.mood)]} ${ML[MO.indexOf(r.mood)]||''}</div></div><button onclick="delFromSheet('${r.id}')" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--red)">🗑</button></div>`).join('')}<button class="sh-add-btn" id="addMoreBtn">➕ 再记一条</button></div>`;
+  ov.onclick=e=>{if(e.target===ov)closeSheet(ov)};
+  ov.querySelector('#addMoreBtn').onclick=()=>{closeSheet(ov);openFlow(ds)};
+  document.body.appendChild(ov);
+}
+function closeSheet(ov){ov.classList.add('closing');setTimeout(()=>ov.remove(),220)}
+window.delFromSheet=async function(id){const ov=document.querySelector('.sh-overlay');await DB.del(id);if(ov)closeSheet(ov);renderCal();updStreak()};
+window.confirmDelRec=function(id){dialog('确认删除','删除后不可恢复。','取消','确认删除',async()=>{await DB.del(id);const ov=document.querySelector('.sh-overlay');if(ov){closeSheet(ov);setTimeout(async()=>{await showAllRecs();renderCal();updStreak()},250)}})};
+window.showAllRecs=async()=>{const all=await DB.getAll();const ov=document.createElement('div');ov.className='sh-overlay';ov.innerHTML=`<div class="sh-sheet"><h3>全部记录</h3>${all.length===0?'<p style="color:var(--t2);text-align:center;padding:20px">还没有记录</p>':all.map(r=>`<div class="sh-entry"><span style="font-size:32px">${BE[r.bt-1]}</span><div style="flex:1"><div style="font-weight:700">${BN[r.bt-1]} · ${r.tslot}</div><div style="font-size:11px;color:var(--t2)">${r.date} · ${ML[MO.indexOf(r.mood)]||''} · ${DL[DU.indexOf(r.dur)]||''}</div></div><button onclick="confirmDelRec('${r.id}')" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--red)">🗑</button></div>`).join('')}</div>`;ov.onclick=e=>{if(e.target===ov)closeSheet(ov)};document.body.appendChild(ov)};
+window.delRec=async function(id){if(!confirm('要删除这条记录吗？'))return;await DB.del(id);renderCal();updStreak()};
+
+// ── Record Flow (bottom sheet) ──
+function openFlow(ds){flowDate=ds;flowStep=0;flowData={};flowJustBacked=false;document.getElementById('flowBd').style.display='flex';showStep()}
+function closeFlow(){const bd=document.getElementById('flowBd');bd.classList.add('closing');setTimeout(()=>{bd.classList.remove('closing');bd.style.display='none';renderCal()},260)}
+document.getElementById('flowBd').addEventListener('click',function(e){if(e.target===this)closeFlow()});
+
+function goBack(){if(flowStep<=0)return;flowStep--;flowJustBacked=true;showStep()}
+
+function showStep(){
+  const el=document.getElementById('flowBody'),total=5,pct=(flowStep+1)/total*100;
+  document.getElementById('flowBackBtn').style.visibility=flowStep>0?'visible':'hidden';
+  el.style.opacity='0';el.style.transform='translateX(30px)';
+  setTimeout(()=>{
+    const mergedHtml=`<div class="flow-title">🔬 什么形状 + 颜色？</div><div class="flow-sub">选择布里斯托分类和颜色，两个都选自动进入下一步</div>
+      <div class="bc-row">
+        <div class="bc-l">${BN.map((b,i)=>`<div class="bc-card ${flowData.bt===i+1?'picked':''}" onclick="pickBC('bt',${i+1})"><span class="bc-e">${BE[i]}</span><span class="bc-n">${b}</span></div>`).join('')}</div>
+        <div class="bc-r">${CO.map((c,i)=>`<div class="bc-card ${flowData.c===c?'picked':''}" onclick="pickBC('c','${c}')"><span class="bc-c-dot" style="background:${CH[i]}"></span><span class="bc-n">${c}</span></div>`).join('')}</div>
+      </div>`;
+    const steps=[
+      {html:`<div class="flow-title">🕐 什么时候拉的？</div><div class="flow-sub">选择时段</div><div class="flow-options">${TS.map((t,i)=>`<div class="opt-card ${flowData.tslot===t?'picked':''}" onclick="pick1('tslot','${t}')"><span class="o-emoji">${TI[i]}</span><div class="o-text"><div class="o-label">${t}</div></div><span class="o-check">✓</span></div>`).join('')}</div>`},
+      {html:mergedHtml},
+      {html:`<div class="flow-title">⏱ 花了多久？</div><div class="flow-sub">选择时长</div><div class="flow-options">${DU.map((d,i)=>`<div class="opt-card ${flowData.dur===d?'picked':''}" onclick="pick1('dur','${d}')"><span class="o-emoji">⏱</span><div class="o-text"><div class="o-label">${DL[i]}</div><div class="o-sub">${DT[i]}</div></div><span class="o-check">✓</span></div>`).join('')}</div>`},
+      {html:`<div class="flow-title">😤 顺畅吗？</div><div class="flow-sub">选择顺畅度</div><div class="flow-options">${SM.map((s,i)=>`<div class="opt-card ${flowData.sm===s?'picked':''}" onclick="pick1('sm','${s}')"><span class="o-emoji">${SE[i]}</span><div class="o-text"><div class="o-label">${SL[i]}</div></div><span class="o-check">✓</span></div>`).join('')}</div>`},
+      {html:`<div class="flow-title">💭 拉完的心情？</div><div class="flow-sub">选择心情</div><div class="flow-options">${MO.map((m,i)=>`<div class="opt-card ${flowData.mood===m?'picked':''}" onclick="pick1('mood','${m}')"><span class="o-emoji">${ME[i]}</span><div class="o-text"><div class="o-label">${ML[i]}</div></div><span class="o-check">✓</span></div>`).join('')}</div>`},
+    ];
+    el.innerHTML=`<div class="flow-progress"><div class="flow-bar"><div class="flow-bar-inner" style="width:${pct}%"></div></div><span class="flow-count">${flowStep+1}/${total}</span></div>${steps[flowStep].html}`;
+    el.style.opacity='1';el.style.transform='translateX(0)';
+  },180);
+}
+
+// Single-select pick (steps 0,2,3,4)
+window.pick1=function(k,v){flowData[k]=v;AUD.tap();setTimeout(()=>{flowStep++;if(flowStep>=5)finishFlow();else showStep()},280)};
+
+// Dual-select pick (step 1)
+window.pickBC=function(k,v){flowData[k]=v;AUD.tap();showStep();if(!flowJustBacked&&flowData.bt&&flowData.c){setTimeout(()=>{flowStep++;showStep()},400)}flowJustBacked=false};
+
+async function finishFlow(){
+  closeFlow(); // dismiss bottom sheet immediately
+  const preAch=await getAch();const preDone=new Set(preAch.filter(a=>a.done).map(a=>a.icon));
+  await DB.put({id:Date.now().toString(),date:flowDate,ts:Date.now(),tslot:flowData.tslot,bt:flowData.bt,c:flowData.c,dur:flowData.dur,sm:flowData.sm,mood:flowData.mood});
+  const streak=await getStreak();
+  await updStreak();
+  // Detect new achievements
+  const postAch=await getAch();
+  const fresh=postAch.filter(a=>a.done&&!preDone.has(a.icon)).map(a=>a.icon);
+  if(fresh.length>0)sessionStorage.setItem('shitDiary_newAch',JSON.stringify(fresh));
+  // Show celebration overlay
+  const cel=document.getElementById('celOverlay');
+  document.getElementById('celDate').textContent=flowDate;
+  document.getElementById('celStreak').textContent=`🔥 连续打卡 ${streak} 天`;
+  document.getElementById('celComment').textContent=getCommentary(flowData.bt,flowData.dur,flowData.sm,flowData.mood);
+  cel.style.display='flex';
+  AUD.celebrate();
+  // Re-trigger bounce animation
+  cel.querySelector('.cel-poop').style.animation='none';
+  cel.querySelector('.cel-poop').offsetHeight; // force reflow
+  cel.querySelector('.cel-poop').style.animation='celBounce .6s cubic-bezier(.34,1.56,.64,1)';
+  spawnConfetti();
+  setTimeout(()=>{cel.classList.add('closing');setTimeout(()=>{cel.classList.remove('closing');cel.style.display='none';renderCal()},300)},2500);
+}
+function spawnConfetti(){
+  const c=document.getElementById('confettiEl');c.innerHTML='';
+  const cols=['#FEBA40','#FFD070','#E85D5D','#F5B756','#BBD29F','#B3744F'];
+  for(let i=0;i<60;i++){const p=document.createElement('div');p.className='confetti-piece';p.style.left=Math.random()*100+'%';p.style.background=cols[Math.floor(Math.random()*cols.length)];p.style.animationDelay=Math.random()*.8+'s';p.style.width=(6+Math.random()*8)+'px';p.style.height=(6+Math.random()*8)+'px';c.appendChild(p)}
+  setTimeout(()=>c.innerHTML='',2800);
+}
+
+// ── Stats ──
+async function renderStats(){
+  const streak=await getStreak(),all=await DB.getAll(),t=all.length||1;
+  let msg='';
+  if(streak>=7)msg='连胜中！继续保持';
+  else if(streak>=3)msg='不错的状态，坚持 ✨';
+  else if(streak>=1)msg='好的开始！坚持就是胜利';
+  else msg='今天还没记录哦';
+  document.getElementById('streakNum').textContent=streak;
+  document.getElementById('streakMsg').textContent=msg;
+  // Bristol bar chart (percentage)
+  const bc=BN.map((_,i)=>{const n=all.filter(r=>r.bt===i+1).length;return Math.round(n/t*100)});
+  // Time slot (percentage)
+  const tc=TS.map(ts=>{const n=all.filter(r=>r.tslot===ts).length;return Math.round(n/t*100)});
+  // Mood donut
+  const mc=MO.map(m=>all.filter(r=>r.mood===m).length);
+  const MC=['#F5B756','#BBD29F','#D09062','#878386','#B3744F','#88AE99'];
+  let moodDonut=`<div style="display:flex;align-items:center;gap:6px"><div class="mood-ring" style="background:conic-gradient(${mc.map((c,i)=>{const start=Math.round(mc.slice(0,i).reduce((a,b)=>a+b,0)/t*100*3.6);const end=Math.round(c/t*100*3.6);return MC[i]+' '+start+'deg '+(start+end)+'deg'}).join(',')})"><div class="mood-inner"><svg viewBox="0 0 24 24" fill="none" stroke="#b0ada6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 8px;flex:1">${mc.map((c,i)=>`<div style="display:flex;align-items:center;gap:4px;font-size:11px"><span style="width:8px;height:8px;border-radius:50%;background:${MC[i]};flex-shrink:0"></span><span style="font-size:20px">${ME[i]}</span><span style="font-weight:700">${ML[i]}</span><span style="color:var(--t2);font-size:10px">${Math.round(c/t*100)}%</span></div>`).join('')}</div></div>`;
+  document.getElementById('statsCharts').innerHTML=
+    '<div class="chart-card"><h3>布里斯托分类分布 <span onclick="showBristolInfo()" style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;border:2px solid var(--t2);color:var(--t2);font-size:11px;font-weight:700;cursor:pointer;vertical-align:middle">?</span></h3><div class="bar-row">'+bc.map((c,i)=>`<div class="bar-col"><div class="bar-fill" style="height:${Math.max(c,2)}px;background:${BC[i]}"></div><div class="bar-label">${BN[i]}</div><div class="bar-pct">${c}%</div></div>`).join('')+'</div></div>'+
+    '<div class="chart-card"><h3>时段分布</h3><div class="bar-row">'+tc.map((c,i)=>`<div class="bar-col"><div class="bar-fill" style="height:${Math.max(c,2)}px;background:var(--orange)"></div><div class="bar-label">${TS[i]}</div><div class="bar-pct">${c}%</div></div>`).join('')+'</div></div>'+
+    '<div class="chart-card"><h3>心情分布</h3>'+moodDonut+'</div>';
+}
+
+async function renderAch(){
+  const ach=await getAch();ach.sort((a,b)=>b.done-a.done);const uc=ach.filter(a=>a.done).length;
+  document.getElementById('achStatsBar').innerHTML=`<span>成就 ${uc}/${ach.length}</span><span style="color:var(--orange)">${uc===0?'继续加油':uc===ach.length?'全部解锁':`已解锁 ${uc} 个`}</span>`;
+  document.getElementById('achGrid').innerHTML=ach.map((a,i)=>`<div class="ach-card ${a.done?'unlocked':'locked'}" data-idx="${i}"><div class="ac-icon">${a.icon}</div><div class="ac-title">${a.title}</div><div class="ac-desc">${a.cond}</div></div>`).join('');
+  document.querySelectorAll('#achGrid .ach-card').forEach(el=>{el.onclick=()=>showAchPopup(ach[+el.dataset.idx])});
+  const fresh=JSON.parse(sessionStorage.getItem('shitDiary_newAch')||'null');
+  if(fresh&&fresh.length>0){sessionStorage.removeItem('shitDiary_newAch');AUD.achieve()}
+}
+
+function showAchPopup(a){
+  const d=a.done,p=a.prog,m=a.max,u=a.unit||'';
+  const pct=Math.min(p/m*100,100);
+  document.getElementById('achPopupCard').innerHTML=
+    `<div class="ap-icon">${a.icon}</div><div class="ap-title">${a.title}</div><div class="ap-desc">${a.desc}</div><div style="font-size:11px;color:var(--t2);margin-top:2px">条件：${a.cond}</div>`+
+    (a.max>1?`<div class="ap-bar-wrap"><div class="ap-bar"><div class="ap-bar-inner" style="width:${pct}%;background:${d?'var(--orange)':'var(--orange)'}"></div></div><div class="ap-prog-text">${p}${u} / ${m}${u}</div></div>`:'')+
+    `<div class="ap-status" style="color:${d?'var(--orange)':'var(--t2)'}">${d?'已解锁 ✓':'尚未解锁'}</div>`+
+    `<button class="ap-btn" style="background:${d?'var(--orange)':'var(--tab-bg)'};color:${d?'#fff':'var(--t2)'}" id="apCloseBtn">知道了</button>`;
+  const popup=document.getElementById('achPopup');popup.style.display='flex';
+  document.getElementById('apCloseBtn').onclick=()=>closeAchPopup();
+  popup.onclick=e=>{if(e.target===popup)closeAchPopup()};
+}
+
+function closeAchPopup(){const p=document.getElementById('achPopup');p.classList.add('closing');setTimeout(()=>{p.classList.remove('closing');p.style.display='none'},220)}
+function showBristolInfo(){const ov=document.createElement('div');ov.className='d-overlay';ov.innerHTML=`<div class="dialog"><h2>布里斯托分类</h2><p style="font-size:12px;color:var(--t2);margin-bottom:10px">布里斯托大便分类法（Bristol Stool Scale）是医学上用于分类人类粪便的标准，共分7种类型。</p>${BN.map((b,i)=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(0,0,0,.04);text-align:left"><span style="font-size:24px;width:32px;text-align:center">${BE[i]}</span><span style="font-weight:700;font-size:14px;color:var(--text);width:60px">${b}</span><span style="font-size:11px;color:var(--t2);line-height:1.4">${['便秘·硬块分节','便秘·香肠状但硬','正常·有裂痕的理想型','正常·光滑柔软的理想型','偏软·软团状','腹泻·糊状蓬松','腹泻·完全水样'][i]}</span></div>`).join('')}<button style="margin-top:12px;width:100%;padding:12px;border:none;border-radius:var(--radius-sm);background:var(--orange);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font)" id="bsClose">知道了</button></div>`;ov.onclick=e=>{if(e.target===ov)ov.remove()};ov.querySelector('#bsClose').onclick=()=>ov.remove();document.body.appendChild(ov)}
+
+// ── Analysis ──
+async function renderAnalysis(){
+  const all=await DB.getAll(),t=all.length;
+  const el=document.getElementById('analysisContent');
+  if(t<5){el.innerHTML=`<div class="ana-placeholder"><div class="ap-icon">🔬</div><div class="ap-msg">再记录 ${5-t} 天即可解锁<br>身体状况分析</div></div>`;return;}
+  const bt=[],sm={},mo={},tsl={};
+  for(let i=1;i<=7;i++)bt[i]=0;
+  all.forEach(r=>{bt[r.bt]=(bt[r.bt]||0)+1;sm[r.sm]=(sm[r.sm]||0)+1;mo[r.mood]=(mo[r.mood]||0)+1;tsl[r.tslot]=(tsl[r.tslot]||0)+1});
+  const bristolScore=Math.round(((bt[3]||0)+(bt[4]||0))/t*100);
+  const comfortScore=Math.round(((sm['verySmooth']||0)+(sm['smooth']||0))/t*100);
+  const regularityScore=Math.round((tsl['晨起']||0)/Math.max(t,1)*100);
+  const moodScore=Math.round((mo['great']||0)/Math.max(t,1)*100);
+  const cc=cl=>cl>=80?'var(--orange)':cl>=50?'var(--orange)':'var(--red)';
+  const tips=[];
+  if((bt[1]||0)+(bt[2]||0)>t*.3)tips.push('Type 1-2 偏多，建议多吃蔬菜水果，每天保证 1.5-2L 饮水 🥗💧');
+  if((bt[6]||0)+(bt[7]||0)>t*.3)tips.push('Type 6-7 偏多，肠胃较敏感，少吃辛辣生冷食物 🍲');
+  if((sm['hard']||0)+(sm['impossible']||0)>t*.4)tips.push('排便困难次数较多，多喝水多吃纤维，可以试试喝一杯温水促进肠蠕动 🚰');
+  if((tsl['凌晨']||0)+(tsl['睡前']||0)>t*.3)tips.push('作息偏晚，尽量规律时间有利于肠道健康 🌙');
+  if(moodScore>=60)tips.push('心情总体很棒，愉快的心情也有助于肠道健康 😊');
+  if(tips.length===0)tips.push('目前各项指标良好，保持现在的习惯就好 👌');
+  // 7-day Bristol color blocks
+  const days=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const ds=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;days.push({ds,wd:['日','一','二','三','四','五','六'][d.getDay()],day:d.getDate()})}
+  const trendBlocks=days.map(({ds,wd,day})=>{const rs=all.filter(r=>r.date===ds);if(!rs.length)return`<div class="td-item"><div class="td-dot-wrap"><div class="td-empty-dot"></div></div><span class="td-label">${wd}</span><span class="td-day">${day}</span></div>`;const dots=rs.map(r=>`<span class="td-dot" style="background:${BC[r.bt-1]}" title="${BN[r.bt-1]}">${BE[r.bt-1]}</span>`).join('');return`<div class="td-item"><div class="td-dot-wrap">${dots}</div><span class="td-label">${wd}</span><span class="td-day">${day}</span></div>`}).join('');
+  // Weekly comparison
+  const now=new Date();const weekAgo=new Date(now);weekAgo.setDate(now.getDate()-7);
+  const thisWeek=all.filter(r=>r.date>=`${weekAgo.getFullYear()}-${String(weekAgo.getMonth()+1).padStart(2,'0')}-${String(weekAgo.getDate()).padStart(2,'0')}`);
+  const lastWeek=all.filter(r=>r.date<`${weekAgo.getFullYear()}-${String(weekAgo.getMonth()+1).padStart(2,'0')}-${String(weekAgo.getDate()).padStart(2,'0')}`).slice(0,thisWeek.length||1);
+  const twSmooth=Math.round(((thisWeek.filter(r=>r.sm==='verySmooth'||r.sm==='smooth').length)/Math.max(thisWeek.length,1))*100);
+  const lwSmooth=lastWeek.length?Math.round(((lastWeek.filter(r=>r.sm==='verySmooth'||r.sm==='smooth').length)/Math.max(lastWeek.length,1))*100):0;
+  el.innerHTML=
+    `<div class="ana-score-row">`+
+    `<div class="ana-score-card"><div class="as-val" style="color:${cc(bristolScore)}">${bristolScore}</div><div class="as-lbl">肠道健康</div></div>`+
+    `<div class="ana-score-card"><div class="as-val" style="color:${cc(regularityScore)}">${regularityScore}</div><div class="as-lbl">规律度</div></div>`+
+    `<div class="ana-score-card"><div class="as-val" style="color:${cc(comfortScore)}">${comfortScore}</div><div class="as-lbl">舒适度</div></div>`+
+    `</div>`+
+    `<div class="chart-card"><h3>近 7 天 布里斯托 分布</h3><div class="trend-days">${trendBlocks}</div></div>`+
+    `<div class="chart-card"><h3>本周 vs 上周</h3><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;text-align:center"><div><div style="font-size:28px;font-weight:900;color:var(--orange)">${thisWeek.length}</div><div style="font-size:11px;color:var(--t2)">本周记录</div></div><div><div style="font-size:28px;font-weight:900;color:var(--t2)">${lastWeek.length}</div><div style="font-size:11px;color:var(--t2)">上周记录</div></div><div><div style="font-size:28px;font-weight:900;color:var(--orange)">${twSmooth}%</div><div style="font-size:11px;color:var(--t2)">本周顺畅度</div></div><div><div style="font-size:28px;font-weight:900;color:var(--t2)">${lwSmooth}%</div><div style="font-size:11px;color:var(--t2)">上周顺畅度</div></div></div></div>`+
+    tips.map(t=>`<div class="ana-tip">${t}</div>`).join('');
+}
+
+// ── Stats tab switching ──
+document.getElementById('tabStats').onclick=()=>{document.getElementById('tabStats').classList.add('active');document.getElementById('tabAnalysis').classList.remove('active');document.getElementById('subStats').classList.add('active');document.getElementById('subAnalysis').classList.remove('active')};
+document.getElementById('tabAnalysis').onclick=()=>{document.getElementById('tabAnalysis').classList.add('active');document.getElementById('tabStats').classList.remove('active');document.getElementById('subAnalysis').classList.add('active');document.getElementById('subStats').classList.remove('active');renderAnalysis()};
+let statsTouchX=0;
+document.getElementById('pageStats').addEventListener('touchstart',e=>{statsTouchX=e.touches[0].clientX},{passive:true});
+document.getElementById('pageStats').addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-statsTouchX;if(dx<-50)document.getElementById('tabAnalysis').click();else if(dx>50)document.getElementById('tabStats').click()});
+
+// ── Settings ──
+document.getElementById('btnExport').onclick=async()=>{const d={records:await DB.getAll(),exported:new Date().toISOString()};const b=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='shit-diary-backup.json';a.click();toast('导出成功')};
+document.getElementById('btnImport').onclick=()=>{const i=document.createElement('input');i.type='file';i.accept='.json';i.onchange=async()=>{const f=i.files[0];if(!f)return;try{const d=JSON.parse(await f.text());if(!d.records)throw Error;let n=0;for(const r of d.records){await DB.put(r);n++}toast(`导入${n}条`);renderCal();updStreak()}catch{toast('文件格式不对')}};i.click()};
+document.getElementById('btnClear').onclick=()=>{dialog('确认清除？','所有记录将被永久删除。','取消','确认删除',async()=>{await DB.clear();renderCal();updStreak();toast('已清除')})};
+document.getElementById('btnAbout').onclick=()=>{const ov=document.createElement('div');ov.className='d-overlay';const VERSION='v9.1';ov.innerHTML=`<div class="dialog"><h2>📋 关于排排</h2><div style="text-align:left;font-size:13px;color:var(--t2);line-height:1.8"><p>💩 排排——你忠实的拉屎搭子。记录每一次释放，追踪你的肠道节奏。</p><p style="margin-top:8px;font-weight:700;color:var(--text)">数据安全</p><p>· 所有数据保存在本地，不上传至任何服务器</p><p>· 可通过导出功能备份数据，通过导入功能恢复</p><p style="margin-top:8px;font-weight:700;color:var(--text)">免责声明</p><p>· 本 App 仅供娱乐与自我记录使用</p><p>· 分析功能不构成医疗建议</p><p>· 如有健康疑虑，请咨询专业医生</p><p style="margin-top:8px;font-size:13px;color:var(--text)">愿你每天顺畅，遇见的都是第三型 🍌</p><p style="margin-top:12px;font-size:10px;color:var(--t2)">制作：zane · 3408732167@qq.com</p><p style="font-size:10px;color:var(--t2)">版本：${VERSION}</p></div><button style="margin-top:14px;width:100%;padding:12px;border:none;border-radius:var(--radius-sm);background:var(--orange);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font)" id="abClose">关闭</button></div>`;ov.onclick=e=>{if(e.target===ov)ov.remove()};ov.querySelector('#abClose').onclick=()=>ov.remove();document.body.appendChild(ov)};
+function dialog(t,m,ct,cf,fn){const ov=document.createElement('div');ov.className='d-overlay';ov.innerHTML=`<div class="dialog"><h2>${t}</h2><p>${m}</p><div class="d-btns"><button style="background:var(--tab-bg);color:var(--text)" id="dc">${ct}</button><button style="background:var(--red);color:#fff" id="df">${cf}</button></div></div>`;ov.onclick=e=>{if(e.target===ov)ov.remove()};ov.querySelector('#dc').onclick=()=>ov.remove();ov.querySelector('#df').onclick=()=>{fn();ov.remove()};document.body.appendChild(ov)}
+
+let calTouchX=0;
+document.getElementById('calCard').addEventListener('touchstart',e=>{calTouchX=e.touches[0].clientX},{passive:true});
+document.getElementById('calCard').addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-calTouchX;if(dx<-50){calM++;if(calM>11){calM=0;calY++}renderCal()}else if(dx>50){calM--;if(calM<0){calM=11;calY--}renderCal()}});
+document.getElementById('btnPrevM').onclick=()=>{calM--;if(calM<0){calM=11;calY--}renderCal()};
+document.getElementById('btnNextM').onclick=()=>{calM++;if(calM>11){calM=0;calY++}renderCal()};
+
+async function updUserCard(){const a=await getAch();const u=document.getElementById('userName');const saved=localStorage.getItem('shitDiary_userName');if(saved)u.textContent=saved;const av=document.getElementById('avatarRing');const savedAv=localStorage.getItem('shitDiary_userAvatar');if(savedAv)av.textContent=savedAv;const el=document.getElementById('achBadges');const unlocked=a.filter(x=>x.done);if(unlocked.length===0){el.innerHTML='<span style="font-size:11px;color:var(--t2);font-weight:600">暂无成就</span>'}else{el.innerHTML=unlocked.map(x=>`<span class="badge-dot" title="${x.title}">${x.icon}</span>`).join('')}}
+function editName(){const ov=document.createElement('div');ov.className='d-overlay';ov.innerHTML=`<div class="dialog"><h2>修改昵称</h2><input id="nameInput" style="width:100%;padding:12px;border-radius:var(--radius-sm);border:2px solid var(--tab-bg);font-size:15px;font-family:var(--font);outline:none;margin-bottom:16px;color:var(--text);background:var(--bg)" value="${document.getElementById('userName').textContent}" maxlength="12"><div class="d-btns"><button style="background:var(--tab-bg);color:var(--text);flex:1;padding:14px;border-radius:var(--radius-sm);border:none;font-size:14px;font-weight:700;cursor:pointer" id="nc">取消</button><button style="background:var(--orange);color:#fff;flex:1;padding:14px;border-radius:var(--radius-sm);border:none;font-size:14px;font-weight:700;cursor:pointer" id="nf">确认</button></div></div>`;ov.onclick=e=>{if(e.target===ov)ov.remove()};ov.querySelector('#nc').onclick=()=>ov.remove();ov.querySelector('#nf').onclick=()=>{const v=ov.querySelector('#nameInput').value.trim();if(v){localStorage.setItem('shitDiary_userName',v);document.getElementById('userName').textContent=v;toast('昵称已更新')}ov.remove()};document.body.appendChild(ov);setTimeout(()=>ov.querySelector('#nameInput').focus(),200)}
+function pickAvatar(){const ov=document.createElement('div');ov.className='d-overlay';const EMOJIS=['💩','😄','😎','🤔','🥳','😇','😤','🥺','👽','👻','👾','🤡','💀','🐱','🐶','🐰','🐼','🐨','🐸','🦊','🐙','🦄','🥹','😈'];const cur=document.getElementById('avatarRing').textContent;ov.innerHTML=`<div class="dialog"><h2>选择头像</h2><div class="emoji-grid">${EMOJIS.map(e=>`<button${e===cur?' class="selected"':''} onclick="selEmoji('${e}')">${e}</button>`).join('')}</div></div>`;ov.onclick=e=>{if(e.target===ov)ov.remove()};window.selEmoji=e=>{localStorage.setItem('shitDiary_userAvatar',e);document.getElementById('avatarRing').textContent=e;ov.remove()};document.body.appendChild(ov)}
+
+// ── Theme ──
+const THEMES={
+  warm:  {bg:'#FBF9F4',card:'#FEFDF9',text:'#4A3728',t2:'#8B8680',orange:'#FEBA40',gold:'#FFD070',brown:'#A0522D',accent:'#F39C12',red:'#E85D5D',blue:'#BBD29F',purple:'#B8A0D0',dqBg:'#FFF7E2',cellRecBg:'#FFF5E0',tabBg:'#EDE5DC',tint:'#FFF0E5'},
+  green: {bg:'#F7F7F7',card:'#FFFFFF',text:'#2D2D2D',t2:'#999999',orange:'#58CC02',gold:'#FFC800',brown:'#8B6914',accent:'#78D010',red:'#FF4B4B',blue:'#1CB0F6',purple:'#CE82FF',dqBg:'#F0FDF0',cellRecBg:'#E8F5E0',tabBg:'var(--tab-bg)EEE',tint:'#F0FFF0'},
+  purple:{bg:'#FBF7FC',card:'#FFFDFE',text:'#3D2E4A',t2:'#9B8EA8',orange:'#A855F7',gold:'#C4B5FD',brown:'#6B21A8',accent:'#C084FC',red:'#E85D5D',blue:'#C4B5FD',purple:'#B8A0D0',dqBg:'#F9F0FF',cellRecBg:'#F5ECFF',tabBg:'#EDE5F5',tint:'#F0E8FF'},
+  dark:  {bg:'#1E1E24',card:'#2A2A32',text:'#E8E4DD',t2:'#9B9790',orange:'#FEBA40',gold:'#FFD070',brown:'#D4A88C',accent:'#F39C12',red:'#E85D5D',blue:'#BBD29F',purple:'#B8A0D0',dqBg:'#3A3528',cellRecBg:'#3D3428',tabBg:'#333333',tint:'#332E28'},
+};
+function applyTheme(k){
+  const t=THEMES[k];const r=document.documentElement.style;
+  r.setProperty('--bg',t.bg);r.setProperty('--card',t.card);r.setProperty('--text',t.text);r.setProperty('--t2',t.t2);r.setProperty('--orange',t.orange);r.setProperty('--gold',t.gold);r.setProperty('--brown',t.brown);r.setProperty('--accent',t.accent);r.setProperty('--red',t.red);r.setProperty('--blue',t.blue);r.setProperty('--purple',t.purple);r.setProperty('--dq-bg',t.dqBg);r.setProperty('--cell-rec-bg',t.cellRecBg);r.setProperty('--tab-bg',t.tabBg);r.setProperty('--tint',t.tint);
+  localStorage.setItem('shitDiary_theme',k);document.querySelectorAll('.theme-dot').forEach(d=>d.classList.toggle('active',d.dataset.theme===k));
+}
+document.querySelectorAll('.theme-dot').forEach(d=>{d.onclick=()=>applyTheme(d.dataset.theme)});
+const savedTheme=localStorage.getItem('shitDiary_theme')||'warm';
+applyTheme(savedTheme);
+
+renderCal();updStreak();updUserCard();
+document.querySelector('.appbar h1').addEventListener('click',()=>{
+  easterEggClicks++;clearTimeout(easterEggTimer);
+  if(easterEggClicks>=7){
+    AUD.celebrate();spawnConfetti();
+    const ov=document.createElement('div');ov.className='d-overlay';
+    const BLS=['愿你的每一次都顺畅如意 🍌','厕所之神保佑你，天天好状态 ✨','祝你的肠道永远年轻有活力 💪','愿你与便便和谐共处，相安无事 🧘','拉得好，活得久，厕所之神与你同在 🚽','愿布里斯托第三型常伴你左右 🍌'];
+    ov.innerHTML=`<div class="dialog"><h2>🚽👑 厕所之神</h2><p>你发现了隐藏的彩蛋！</p><p style="font-size:13px;color:var(--t2);margin-top:4px">${BLS[Math.floor(Math.random()*BLS.length)]}</p><button style="margin-top:14px;width:100%;padding:12px;border:none;border-radius:var(--radius-sm);background:var(--orange);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font)" id="ecClose">👑 接受祝福</button></div>`;
+    ov.onclick=e=>{if(e.target===ov)ov.remove()};ov.querySelector('#ecClose').onclick=()=>ov.remove();document.body.appendChild(ov);
+    easterEggClicks=0;
+  }else if(easterEggClicks===5){toast('再点两次有惊喜… 💩')}
+  else if(easterEggClicks===3){toast('干嘛一直点我？')}
+  easterEggTimer=setTimeout(()=>{easterEggClicks=0},1200);
+});
+void function tryBoing(){try{AUD.boing()}catch{setTimeout(tryBoing,200)}}();
+setTimeout(()=>{const s=document.getElementById('splash');s.classList.add('fade');setTimeout(()=>s.remove(),350)},1200);</script>
+</body>
+</html>
