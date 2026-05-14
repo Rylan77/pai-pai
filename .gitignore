@@ -21,6 +21,9 @@ Thumbs.db
 # Claude
 .claude/
 
+# CLAUDE.md (contains personal info)
+CLAUDE.md
+
 # Old icon
 屎记.png
 
